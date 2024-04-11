@@ -1,5 +1,3 @@
-
-
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
@@ -31,45 +29,80 @@ const defaultItems = [
 { name: "Write and press on the plus sign to add an item." },
 { name: "<== Press this to delete - scratch - an item." }
 ];
+/*
 function insertDefaultItems(){
 return Item.insertMany(defaultItems)
   .then((items)=>{
     
-    items.forEach(item=>itemsList.push(item.name))
+    items.forEach(item=>deafultItemsList.push(item.name))
     console.log("Successfully added default items");
   })
   .catch((err)=>console.error("Error: Couldn't add items",err))
 }
-
-const itemsList = []
-
-app.get("/", function(req, res) {
-  let day = "17:17"
-  if (itemsList.length === 0) {
-    insertDefaultItems()
-      .then(()=>{
-        res.render("list", {listTitle:day, newListItems:itemsList})
-      })
-      .catch((err)=>{
-        res.status(500).send("An error occurred while adding default items")
-      })
+*/
+async function insertDefaultItems(){ // check the logic 
+  try{
+    const insertedItemsObject = await Item.insertMany(defaultItems);
+    insertedItemsObject.forEach(insertedItem=>deafultItemsList.push(insertedItem.name));
+    console.log("Successfully inserted default items to DB",defaultItems);
+    return deafultItemsList;
   }
-  else{
-   res.render("list", { listTitle: day, newListItems: itemsList });
+  catch (err) {
+    console.error("Error: => ",err);
+  }
 }
 
+
+async function insertUserInput(userInput){ // UPDATE THE LOGIC
+  
+  try{ 
+    const insertedItem = await Item.create({ name: userInput}); 
+    userItemsList.push(insertedItem.name); // *****test*****
+    console.log("Successfully inserted user input to DB",insertedItem.name);
+    return insertedItem.name;
+  }
+  catch (err) {
+    console.error("Error: => ",err);
+  }
+}
+
+const deafultItemsList = [];
+const userItemsList = []; 
+app.get("/", async function(req, res) {
+  let day = "17:17";
+  try {
+    const response = await Item.find({});
+    if (response.length===0) {
+      await insertDefaultItems();
+      res.render("list", {
+        listTitle: day,
+        newListItems: deafultItemsList
+      });
+      
+    }
+    else {
+      // const response = await insertUserInput();
+      res.render("list", {
+        listTitle: day,
+        newListItems: userItemsList
+      });
+    }
+  }
+  catch (err) {
+    console.error("Error:==>",err);
+  }  
 });
 
-app.post("/", function(req, res){
+app.post("/",async function(req, res){
 
-  const item = req.body.newItem;
-
-  if (req.body.list === "Work") {
-    workItems.push(item);
-    res.redirect("/work");
-  } else {
-    itemsList.push(item);
-    res.redirect("/");
+  const userItem = req.body.newItem;
+  try {
+    await insertUserInput(userItem);
+    res.redirect("/")
+  }
+  catch (err) {
+    console.error("Error occurred while inserting user input:",err);
+    res.status(500).send("An error occurred while adding the new item");
   }
 });
 
