@@ -69,7 +69,7 @@ async function insertUserInput(userInput){ // UPDATE THE LOGIC
 const deafultItemsList = [];
 const userItemsList = []; 
 app.get("/", async function(req, res) {
-  let day = "17:17";
+  let day = date.getDate();
   try {
     const response = await Item.find({});
     if (response.length===0) {
