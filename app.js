@@ -1,7 +1,3 @@
-/*
-add a functionality to the checkbox to remove the item from database()
-*/
-
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
@@ -45,12 +41,7 @@ async function insertDefaultItems(){
     throw err;
   }
 }
-
- 
-
-
-
-async function insertUserInput(userInput){ // UPDATE THE LOGIC
+async function insertUserInput(userInput){ 
   
   try{ 
     const insertedItem = await Item.create({ name: userInput}); 
@@ -99,29 +90,17 @@ app.post("/",async function(req, res){
   const userItem = req.body.newItem;
   const listName = req.body.list;
   
-  
-  /*
-  response => :
-  [
-  {
-    _id: new ObjectId('661c766a36609f42567477d7'),
-    name: 'work',
-    items: [ [Object], [Object], [Object] ],
-    __v: 0
-  }
-] 
-  */
   try {
     if (listName === "Today"){
       await insertUserInput(userItem);
       res.redirect("/");
     }
     else {
-      const response = await List.findOne({name: listName});
-      if (response){
-        response.items.push({name:userItem});
-        await response.save();
-        console.log(response);
+      const foundCustomList = await List.findOne({name: listName});
+      if (foundCustomList){
+        foundCustomList.items.push({name:userItem});
+        await foundCustomList.save();
+        console.log("Custom List Found==>",foundCustomList);
         res.redirect("/"+listName);
       }
       else {
@@ -138,29 +117,44 @@ app.post("/",async function(req, res){
 });
 
 app.post("/delete", function(req,res){
-  const checkedItemId =  req.body.checkbox; 
-  Item.findByIdAndDelete(checkedItemId)
-    .then(()=>{
-      console.log("Sucessfully deleted from DB");
-      res.redirect("/");
-    })  
-    .catch ((err)=>{
-      console.error("Error deleting item:",err);
-      res.status(500).send("An error occurred while deleting the item");
-      })
+  // const currentCostumelistName = listname;??
+  const listName = req.body.listName; // ==============
+  console.log("/delete",listName);
+  const checkedItemId =  req.body.checkbox;
+  if(listName==="Today"){ // ============= added if statement
+  // for Default or main page
+    Item.findByIdAndDelete(checkedItemId)
+      .then(()=>{
+        console.log("Sucessfully deleted from original DB");
+        res.redirect("/");
+      })  
+      .catch ((err)=>{
+        console.error("Error deleting item:",err);
+        res.status(500).send("An error occurred while deleting the item");
+        });
+    }
+   else{   // added else 
+    // for custome page    
+      
+    List.findOneAndUpdate({name:listName}, {$pull:{items:{_id:checkedItemId}}})
+        .then(()=>{
+          console.log("Sucessfully deleted from<",listName,">  DB")
+          res.redirect("/"+listName);
+        })
+        
+    }   
+          
 })
 
+app.get("/about", function(req, res){
+  res.render("about");
+});
+
 app.get("/:customListName",async (req,res)=>{
-  const customListName = req.params.customListName;
-  const defaultItemsObject = defaultItems.map(defaultItem=> new Item({name:defaultItem.name}))
+  const customListName = req.params.customListName; 
+  const defaultItemsObject = defaultItems.map(defaultItem=> new Item({name:defaultItem.name}));
   const response = await List.find({name:customListName});
-  
-  
-  //  create a new list with customListName, else
-  //  the list with customListName already exists.
-  
-  
-  
+    
   if (response.length === 0){  
     const list = new List({
       name:customListName,
@@ -183,9 +177,6 @@ app.get("/:customListName",async (req,res)=>{
 
 });
 
-app.get("/about", function(req, res){
-  res.render("about");
-});
 
 app.listen(3000, function() {
   console.log("Server started on port 3000");
