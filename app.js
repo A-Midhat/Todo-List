@@ -6,12 +6,15 @@ const date = require(__dirname + "/date.js");
 
 const app = express();
 
+// Coonect to the MongoDb database
 mongoose.connect('mongodb://127.0.0.1:27017/todoListDB');
 app.set('view engine', 'ejs');
 
+// setup of the Middleware
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
+// Define Mongoose schemas and models
 const itemsSchema = new mongoose.Schema({
   name : String
 });
@@ -23,16 +26,18 @@ const listSchema = {
 };
 const List = mongoose.model("List", listSchema);
 
+// Default items for initialization
 const defaultItems = [
 { name: "Welcome to your todo list!" },
 { name: "Write and press on the plus sign to add an item." },
 { name: "<== Press this to delete - scratch - an item." }
 ];
- 
+
+// Function to insert default items into the database
 async function insertDefaultItems(){ 
   try{
-    const insertedItems = await Item.insertMany(defaultItems); // check this to fix the bug
-    insertedItems.forEach(insertedItem=>deafultItemsList.push(insertedItem.name)); // delete this and return insertedItems.
+    const insertedItems = await Item.insertMany(defaultItems); 
+    insertedItems.forEach(insertedItem=>deafultItemsList.push(insertedItem.name)); 
     console.log("Successfully inserted default items to DB",defaultItems);
     return deafultItemsList; 
   }
@@ -41,6 +46,8 @@ async function insertDefaultItems(){
     throw err;
   }
 }
+
+// Function to insert user input into the database
 async function insertUserInput(userInput){ 
   
   try{ 
@@ -55,16 +62,17 @@ async function insertUserInput(userInput){
   }
 }
 
-const userItemsCustomList = [];
+// Arrays to store retreived items names from DB
 const deafultItemsList = [];
 const userItemsList = [];  
+
 app.get("/", async function(req, res) {
   
   let day = "Today";
   try {
     const response = await Item.find({}); 
-    if (response.length===0 && userItemsList.length === 0) { // get rid of '&& userItemsList.length === 0'
-      await insertDefaultItems(); // something wrong with the async here 
+    if (response.length===0 && userItemsList.length === 0) { 
+      await insertDefaultItems(); 
       res.render("list", {
       listTitle: day,
       newListItems: deafultItemsList 
@@ -85,6 +93,7 @@ app.get("/", async function(req, res) {
   }  
 });
 
+// Route to handle adding new items
 app.post("/",async function(req, res){
 
   const userItem = req.body.newItem;
@@ -116,12 +125,12 @@ app.post("/",async function(req, res){
 
 });
 
+// Route to handle deleting items
 app.post("/delete", function(req,res){
-  // const currentCostumelistName = listname;??
-  const listName = req.body.listName; // ==============
+  const listName = req.body.listName;
   console.log("/delete",listName);
   const checkedItemId =  req.body.checkbox;
-  if(listName==="Today"){ // ============= added if statement
+  if(listName==="Today"){ 
   // for Default or main page
     Item.findByIdAndDelete(checkedItemId)
       .then(()=>{
@@ -133,7 +142,7 @@ app.post("/delete", function(req,res){
         res.status(500).send("An error occurred while deleting the item");
         });
     }
-   else{   // added else 
+   else{
     // for custome page    
       
     List.findOneAndUpdate({name:listName}, {$pull:{items:{_id:checkedItemId}}})
@@ -146,10 +155,12 @@ app.post("/delete", function(req,res){
           
 })
 
+// Route to render the about page
 app.get("/about", function(req, res){
   res.render("about");
 });
 
+// Route to handle custom lists
 app.get("/:customListName",async (req,res)=>{
   const customListName = req.params.customListName; 
   const defaultItemsObject = defaultItems.map(defaultItem=> new Item({name:defaultItem.name}));
@@ -169,7 +180,6 @@ app.get("/:customListName",async (req,res)=>{
 
   else {
     // render an exsiting todo list
-    
     console.log("List already exists:", customListName);
     res.render("list", {listTitle:customListName, newListItems:response[0].items});
 
@@ -177,7 +187,6 @@ app.get("/:customListName",async (req,res)=>{
 
 });
 
-
 app.listen(3000, function() {
-  console.log("Server started on port 3000");
+  console.log("Server live at port 127.0.0.1:3000");
 });
