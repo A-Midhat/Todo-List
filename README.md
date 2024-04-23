@@ -12,4 +12,6 @@
 6. Open the application in your browser at
    ```bash
    http://localhost:3000
-8. Create a custome list by adding your custom name to the url, e.g. http://localhost:3000/<customName>
+8. Create a custome list by adding your custom name to the url, e.g.
+   ```bash
+    http://localhost:3000/<customListName>
