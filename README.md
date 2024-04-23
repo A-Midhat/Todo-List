@@ -11,5 +11,5 @@
    node app.js
 6. Open the application in your browser at
    ```bash
-   [http://localhost:3000](http://localhost:3000).
+   http://localhost:3000
 8. Create a custome list by adding your custom name to the url, e.g. http://localhost:3000/<customName>
